@@ -101,7 +101,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Video Background */}
       <video
         autoPlay
@@ -129,7 +129,7 @@ export default function App() {
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.5 }}
-          className="px-6 py-4 border-b border-cyan-500/20 bg-gradient-to-r from-slate-900/80 to-slate-800/80 backdrop-blur-sm"
+          className="px-6 py-4 border-b border-cyan-500/20 bg-linear-to-r from-slate-900/80 to-slate-800/80 backdrop-blur-sm"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -143,7 +143,7 @@ export default function App() {
                 }}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                 whileHover={{ scale: 1.1, rotate: 10 }}
-                className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center cursor-pointer"
+                className="w-12 h-12 rounded-xl bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center cursor-pointer"
               >
                 <Sparkles className="w-6 h-6 text-white" />
               </motion.div>
@@ -210,7 +210,7 @@ export default function App() {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.5 }}
-          className="px-6 py-4 border-t border-cyan-500/20 bg-gradient-to-r from-slate-900/80 to-slate-800/80 backdrop-blur-sm"
+          className="px-6 py-4 border-t border-cyan-500/20 bg-linear-to-r from-slate-900/80 to-slate-800/80 backdrop-blur-sm"
         >
           <div className="flex gap-3 items-end">
             <div className="flex-1 relative">
@@ -229,7 +229,7 @@ export default function App() {
               whileTap={{ scale: 0.95 }}
               onClick={handleSend}
               disabled={!inputValue.trim() || isTyping}
-              className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-2xl shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 group font-semibold text-sm"
+              className="px-6 py-3 bg-linear-to-r from-cyan-500 to-blue-600 text-white rounded-2xl shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 group font-semibold text-sm"
             >
               <motion.div
                 animate={{ x: [0, 3, 0] }}

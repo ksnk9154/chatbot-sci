@@ -25,7 +25,7 @@ export const Message = forwardRef<HTMLDivElement, MessageProps>(
             animate={{ scale: 1, rotate: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
             whileHover={{ scale: 1.1, rotate: 5 }}
-            className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/50"
+            className="shrink-0 w-10 h-10 rounded-full bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/50"
           >
             <Bot className="w-5 h-5 text-white" />
           </motion.div>
@@ -54,7 +54,7 @@ export const Message = forwardRef<HTMLDivElement, MessageProps>(
             animate={{ scale: 1, rotate: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
             whileHover={{ scale: 1.1, rotate: -5 }}
-            className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/50"
+            className="shrink-0 w-10 h-10 rounded-full bg-linear-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/50"
           >
             <User className="w-5 h-5 text-white" />
           </motion.div>
