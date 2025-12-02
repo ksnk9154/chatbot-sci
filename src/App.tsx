@@ -111,7 +111,7 @@ export default function App() {
         className="absolute inset-0 w-full h-full object-cover z-0"
         style={{ filter: 'brightness(0.3) contrast(0.8)' }}
       >
-        <source src="/Cycled 3d Animation Abstract Minimalist Geometric Stock Footage Video (100% Royalty-free) 1108763897.webm" type="video/webm" />
+        <source src="/background.webm" type="video/webm" />
       </video>
 
       {/* Ambient glow effects */}
