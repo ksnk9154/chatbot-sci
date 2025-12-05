@@ -6,10 +6,11 @@ interface MessageProps {
   content: string;
   isBot: boolean;
   timestamp: string;
+  usedContext?: boolean;
 }
 
 export const Message = forwardRef<HTMLDivElement, MessageProps>(
-  ({ content, isBot, timestamp }, ref) => {
+  ({ content, isBot, timestamp, usedContext = false }, ref) => {
     return (
       <motion.div
         ref={ref}
@@ -45,7 +46,19 @@ export const Message = forwardRef<HTMLDivElement, MessageProps>(
           >
             <p className="leading-relaxed text-sm font-normal">{content}</p>
           </motion.div>
-          <span className="text-xs font-medium text-slate-500 px-2">{timestamp}</span>
+          <div className="flex items-center gap-2 px-2">
+            <span className="text-xs font-medium text-slate-500">{timestamp}</span>
+            {usedContext && (
+              <motion.span
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full font-medium"
+                title="Used conversation context"
+              >
+                Context
+              </motion.span>
+            )}
+          </div>
         </div>
 
         {!isBot && (

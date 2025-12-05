@@ -1,26 +1,95 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Sparkles, Zap, Trash2, RefreshCw } from 'lucide-react';
+import { Send, Sparkles, Zap, Trash2, RefreshCw, Copy, ChevronDown, ChevronUp } from 'lucide-react';
 import { Message } from './components/Message';
 import { TypingIndicator } from './components/TypingIndicator';
+import { askBackend, BackendResult } from './api';
 
 interface ChatMessage {
   id: string;
   content: string;
   isBot: boolean;
   timestamp: string;
+  backendResults?: BackendResult[];
+  usedContext?: boolean;
 }
 
-const botResponses = [
-  "I'm processing your request through quantum neural networks...",
-  "Analyzing data streams across multiple dimensions...",
-  "Fascinating question! Let me access the knowledge matrix...",
-  "I've scanned 847 terabytes of data to find the answer...",
-  "Initializing response protocols from the cloud consciousness...",
-  "Your inquiry has been received and processed through AI cores...",
-  "Interesting! I'm synthesizing information from parallel universes...",
-  "Computing optimal response using advanced algorithms...",
-];
+
+
+function formatResultsAsMessage(results: BackendResult[]) {
+  if (!results || results.length === 0) return "Sorry — I couldn't find a good match.";
+  return `Found ${results.length} relevant result${results.length !== 1 ? 's' : ''}. See details below.`;
+}
+
+// SearchResult component for displaying individual results with actions
+function SearchResult({ result, index }: { result: BackendResult; index: number }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const scorePct = (result.score * 100).toFixed(1);
+  const displayText = isExpanded ? result.text : (result.text.length > 200 ? result.text.slice(0, 200).trim() + "…" : result.text);
+
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(result.text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1 }}
+      className="bg-slate-800/50 rounded-lg p-4 border border-cyan-500/20 mb-3"
+    >
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className="text-cyan-400 font-semibold">#{index + 1}</span>
+          <span className="text-green-400 text-sm">Score: {scorePct}%</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={copyToClipboard}
+            className="p-1 rounded text-slate-400 hover:text-cyan-400 hover:bg-slate-700/50 transition-colors"
+            title="Copy snippet"
+          >
+            <Copy className="w-4 h-4" />
+          </motion.button>
+          {result.text.length > 200 && (
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="p-1 rounded text-slate-400 hover:text-cyan-400 hover:bg-slate-700/50 transition-colors"
+              title={isExpanded ? "Collapse" : "Expand"}
+            >
+              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </motion.button>
+          )}
+        </div>
+      </div>
+      <p className="text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">{displayText}</p>
+      {copied && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          className="mt-2 text-green-400 text-xs"
+        >
+          Copied to clipboard!
+        </motion.div>
+      )}
+    </motion.div>
+  );
+}
 
 export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -33,6 +102,8 @@ export default function App() {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const contextLength = 2; // Number of previous messages to include
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -46,6 +117,9 @@ export default function App() {
   const handleSend = async () => {
     if (!inputValue.trim() || isTyping) return;
 
+    // Clear any previous errors
+    setError(null);
+
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       content: inputValue,
@@ -54,20 +128,46 @@ export default function App() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    // Build context from recent messages for better search
+    const recentMessages = messages.slice(-contextLength * 2); // Get last N pairs of messages
+    const contextParts = recentMessages
+      .filter(msg => !msg.isBot)
+      .map(msg => msg.content)
+      .slice(-contextLength); // Keep only last N user messages
+
+    const contextQuery = contextParts.length > 0
+      ? `${contextParts.join(' ')} ${inputValue}`.trim()
+      : inputValue;
+    const hasContext = contextQuery !== inputValue;
     setInputValue('');
     setIsTyping(true);
 
-    // Simulate bot typing delay
-    setTimeout(() => {
+    try {
+      const resp = await askBackend(contextQuery, 3);
+      const botText = formatResultsAsMessage(resp.results);
       const botMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        content: botResponses[Math.floor(Math.random() * botResponses.length)],
+        content: botText,
+        isBot: true,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        backendResults: resp.results,
+        usedContext: hasContext,
+      };
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (err: any) {
+      console.error("Backend call failed:", err);
+      const errorMessage = err?.message ?? "Unknown error";
+      setError(`Backend connection failed: ${errorMessage}`);
+      const errMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        content: `Sorry — could not reach the backend. Make sure the TF-IDF server is running and CORS is enabled.`,
         isBot: true,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
-      setMessages((prev) => [...prev, botMessage]);
+      setMessages((prev) => [...prev, errMessage]);
+    } finally {
       setIsTyping(false);
-    }, 2000);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -113,6 +213,28 @@ export default function App() {
       >
         <source src="/background.webm" type="video/webm" />
       </video>
+
+      {/* Error Toast */}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-red-500/90 text-white px-4 py-2 rounded-lg shadow-lg backdrop-blur-sm"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">{error}</span>
+              <button
+                onClick={() => setError(null)}
+                className="text-white/70 hover:text-white ml-2"
+              >
+                ×
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Ambient glow effects */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl z-5" />
@@ -193,12 +315,26 @@ export default function App() {
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
           <AnimatePresence mode="popLayout">
             {messages.map((message) => (
-              <Message
-                key={message.id}
-                content={message.content}
-                isBot={message.isBot}
-                timestamp={message.timestamp}
-              />
+              <div key={message.id}>
+                <Message
+                  content={message.content}
+                  isBot={message.isBot}
+                  timestamp={message.timestamp}
+                />
+                {message.isBot && message.backendResults && message.backendResults.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="mt-4 space-y-2"
+                  >
+                    {message.backendResults.map((result, index) => (
+                      <SearchResult key={`${message.id}-result-${index}`} result={result} index={index} />
+                    ))}
+                  </motion.div>
+                )}
+              </div>
             ))}
             {isTyping && <TypingIndicator key="typing" />}
           </AnimatePresence>

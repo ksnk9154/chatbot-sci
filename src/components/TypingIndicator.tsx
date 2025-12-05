@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { Bot } from 'lucide-react';
 import { forwardRef } from 'react';
 
-export const TypingIndicator = forwardRef<HTMLDivElement>((props, ref) => {
+export const TypingIndicator = forwardRef<HTMLDivElement>((_, ref) => {
   return (
     <motion.div
       ref={ref}

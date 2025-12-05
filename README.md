@@ -1,67 +1,68 @@
-# Sci-Fi Chatbot
+You can customize the chatbot by:
 
-A futuristic AI chatbot with stunning sci-fi styling, 4K clarity, and smooth animations built with React, TypeScript, and Motion.
+- Modifying bot responses in `src/App.tsx` (`botResponses` array)
+- Adjusting colors and animations in component files
+- Changing particle count in `ParticleBackground.tsx`
+- Updating styling in Tailwind classes
+=======
+## API Documentation
 
-## Features
+### POST /chat
+Search for relevant documents using TF-IDF retrieval.
 
-- 🎨 Stunning sci-fi UI with glowing effects and particle animations
-- ⚡ Smooth Motion animations
-- 💬 Interactive chat interface with typing indicators
-- 🎯 Clear and reset functionality
-- 📱 Responsive design
+**Request:**
+```json
+{
+  "query": "your search query",
+  "top_k": 3
+}
+```
 
-## Getting Started
+**Response:**
+```json
+{
+  "query": "your search query",
+  "best_score": 0.85,
+  "results": [
+    {
+      "source": "data/sample1.txt",
+      "chunk_id": "chunk_0",
+      "text": "Relevant text snippet...",
+      "score": 0.85
+    }
+  ]
+}
+```
 
-### Prerequisites
+### GET /health
+Check if the service is running and index is loaded.
 
-- Node.js (v16 or higher)
-- npm or yarn
+**Response:**
+```json
+{
+  "status": "ok",
+  "chunks": 42
+}
+```
 
-### Installation
+## Deployment
 
-1. Clone the repository or download the source code
-
-2. Install dependencies:
+### Docker Production
 ```bash
-npm install
+# Build and run
+docker-compose up --build -d
+
+# View logs
+docker-compose logs -f
+
+# Stop
+docker-compose down
 ```
 
-3. Start the development server:
-```bash
-npm start
-```
-
-The app will open in your browser at `http://localhost:3000`
-
-## Available Scripts
-
-- `npm start` - Starts the development server
-- `npm run dev` - Alternative command to start the development server
-- `npm run build` - Builds the app for production
-- `npm run preview` - Preview the production build locally
-
-## Tech Stack
-
-- **React** - UI framework
-- **TypeScript** - Type safety
-- **Motion** - Smooth animations
-- **Tailwind CSS 4.0** - Styling
-- **Vite** - Build tool
-- **Lucide React** - Icons
-
-## Project Structure
-
-```
-src/
-├── components/
-│   ├── Message.tsx          # Individual message component
-│   ├── TypingIndicator.tsx  # Animated typing indicator
-│   └── ParticleBackground.tsx # Particle animation background
-├── styles/
-│   └── globals.css          # Global styles and Tailwind setup
-├── App.tsx                  # Main application component
-└── main.tsx                 # Application entry point
-```
+### Manual Deployment
+1. Build index on your server: `python indexer.py`
+2. Set `PORT` environment variable
+3. Run `python app.py`
 
 ## Customization
 
@@ -71,7 +72,4 @@ You can customize the chatbot by:
 - Adjusting colors and animations in component files
 - Changing particle count in `ParticleBackground.tsx`
 - Updating styling in Tailwind classes
-
-## License
-
-MIT
+- Adding new documents to `backend/data/` and rebuilding the index
