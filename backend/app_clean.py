@@ -1,10 +1,13 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import joblib, os
-from sklearn.metrics.pairwise import cosine_similarity
+import os
+import pickle
 import numpy as np
+import faiss
+from sentence_transformers import SentenceTransformer
 
-INDEX_DIR = "index"
+INDEX_FILE = "faiss_index.bin"
+CHUNKS_FILE = "chunks.pkl"
 PORT = int(os.environ.get("PORT", 8000))
 
 app = Flask(__name__)
@@ -12,38 +15,42 @@ CORS(app)
 
 # load index (fail fast with helpful message)
 try:
-    vectorizer = joblib.load(os.path.join(INDEX_DIR, "vectorizer.joblib"))
-    tfidf_matrix = joblib.load(os.path.join(INDEX_DIR, "tfidf_matrix.joblib"))
-    docs = joblib.load(os.path.join(INDEX_DIR, "docs.joblib"))
+    index = faiss.read_index(INDEX_FILE)
+    with open(CHUNKS_FILE, "rb") as f:
+        chunks = pickle.load(f)
+    model = SentenceTransformer("all-MiniLM-L6-v2")
 except Exception as e:
     print("Error loading index. Did you run indexer.py first? Exception:", e)
-    vectorizer = None; tfidf_matrix = None; docs = []
+    index = None; chunks = []; model = None
+
+@app.route("/")
+def home():
+    return "Backend is running.", 200
 
 @app.route("/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok", "chunks": len(docs)})
+    return jsonify({"status": "ok", "chunks": len(chunks)})
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    if vectorizer is None:
+    if index is None or model is None:
         return jsonify({"error":"index not loaded; run indexer.py first"}), 500
     body = request.get_json(force=True)
     query = body.get("query","")
     top_k = int(body.get("top_k", 3))
     if not query:
         return jsonify({"error":"query missing"}), 400
-    qv = vectorizer.transform([query])
-    sims = cosine_similarity(qv, tfidf_matrix).flatten()
-    idxs = (-sims).argsort()[:top_k]
+    query_vec = model.encode([query])
+    query_vec = np.asarray(query_vec, dtype="float32")
+    distances, indices = index.search(query_vec, top_k)
     results = []
-    for i in idxs:
-        results.append({
-            "source": docs[i]["source"],
-            "chunk_id": docs[i]["chunk_id"],
-            "text": docs[i]["text"],
-            "score": float(sims[i])
-        })
-    return jsonify({"query":query, "best_score": float(sims[idxs[0]]) if len(idxs) else 0.0, "results":results})
+    for i, idx in enumerate(indices[0]):
+        if idx < len(chunks):
+            results.append({
+                "text": chunks[idx],
+                "score": float(distances[0][i])
+            })
+    return jsonify({"query":query, "best_score": float(distances[0][0]) if len(distances[0]) else 0.0, "results":results})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT, debug=False)
